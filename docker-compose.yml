@@ -1,0 +1,19 @@
+version: "3.8"
+services:
+  db:
+    image: postgres:15
+    container_name: organize-simple-db-frontend
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: root
+      POSTGRES_DB: organize_simple_frontend
+    volumes:
+      - db_data:/var/lib/postgresql/data
+    ports:
+      - "5433:5432"
+volumes:
+  db_data:
+    name: organize-simple-data-frontend
+# networks:
+#   organize_simple_network:
+#     name: organize_simple_network

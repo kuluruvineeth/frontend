@@ -1,0 +1,164 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+  previewFeatures = ["jsonProtocol"]
+}
+
+datasource db {
+  provider = "postgresql"
+  url = env("POSTGRES_URL") // uses connection pooling
+  // directUrl = env("POSTGRES_URL_NON_POOLING") // uses a direct connection
+  // shadowDatabaseUrl = env("POSTGRES_URL_NON_POOLING") // used for migrations
+}
+
+model User {
+  id        String     @id @default(uuid())
+  username     String  @unique
+  password  String
+  extractions Extraction[]
+  Receipt Receipt[]
+  Invoice Invoice[]
+  CardStatement CardStatement[]
+  preferences Preferences?
+}
+
+enum Status {
+  TO_RECOGNIZE
+  TO_EXTRACT
+  TO_VERIFY
+  PROCESSED
+}
+
+model Extraction {
+  id String @id @default(uuid())
+  filename String
+  objectPath String
+  text String?
+  category String?
+  json Json?
+  receipt Receipt?
+  invoice Invoice?
+  cardStatement CardStatement?
+  userId String
+  status Status @default(TO_RECOGNIZE)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user User @relation(fields: [userId],references: [id],onDelete: Cascade)
+}
+
+model Receipt{
+  id String @id @default(uuid())
+  userId String
+  extractionId String @unique
+  objectPath String
+  number String?
+  category String
+  date DateTime
+  time String?
+  from String
+  subtotal Float?
+  tax Float?
+  tip Float?
+  total Float
+  items ReceiptItem[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user User @relation(fields: [userId],references: [id],onDelete: Cascade)
+  extraction Extraction @relation(fields: [extractionId],references: [id],onDelete: Cascade)
+}
+
+model ReceiptItem{
+  id String @id @default(uuid())
+  receiptId String
+  description String
+  quantity Float
+  amount Float
+
+  Receipt Receipt @relation(fields: [receiptId],references: [id],onDelete: Cascade)
+}
+
+model Invoice{
+  id String @id @default(uuid())
+  userId String
+  extractionId String @unique
+  objectPath String
+  invoiceNumber String?
+  category String
+  date DateTime
+  fromName String?
+  fromAddress String?
+  toName String?
+  toAddress String?
+  items InvoiceItem[]
+  currency String?
+  totalAmountDue Float?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user User @relation(fields: [userId],references: [id],onDelete: Cascade)
+  extraction Extraction @relation(fields: [extractionId],references: [id],onDelete: Cascade)
+
+}
+
+model InvoiceItem{
+  id String @id @default(uuid())
+  invoiceId String
+  description String?
+  amount Float?
+
+  Invoice Invoice @relation(fields: [invoiceId],references: [id],onDelete: Cascade)
+}
+
+
+model CardStatement{
+  id String @id @default(uuid())
+  userId String
+  extractionId String @unique
+  objectPath String
+  issuerName String
+  issuerAddress String?
+  recipientName String?
+  recipientAddress String?
+  creditCardName String?
+  creditCardHolder String?
+  creditCardNumber String?
+  date DateTime
+  transactions CardTransaction[]
+  currency String?
+  totalAmountDue Float?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user User @relation(fields: [userId],references: [id],onDelete: Cascade)
+   extraction Extraction @relation(fields: [extractionId],references: [id],onDelete: Cascade)
+
+}
+
+model CardTransaction{
+  id String @id @default(uuid())
+  cardStatementId String
+  description String?
+  category String
+  amount Float?
+
+  CardStatement CardStatement @relation(fields: [cardStatementId],references: [id],onDelete: Cascade)
+}
+
+model Preferences{
+  id String @id @default(uuid())
+  userId String @unique
+  classificationModel String
+  extractionModel String
+  analysisModel String
+  receiptExampleExtrationId String?
+  invoiceExampleExtractionId String?
+  cardStatementExampleExtractionId String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user User @relation(fields: [userId],references: [id],onDelete: Cascade)
+}
